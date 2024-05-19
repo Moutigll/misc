@@ -1,0 +1,139 @@
+
+<!doctype html>
+<html lang="fr">
+<head>
+    <title>Fuze Clicker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="http://clicker.fuzeiii.fr/Content/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Foldit:wght@500&amp;family=Nabla&amp;family=Roboto:wght@500&amp;display=swap&amp;family=Archivo+Black&amp;display=swap&amp;family=Poppins&amp;display=swap">
+    <link href="https://fonts.cdnfonts.com/css/minecraft-4" rel="stylesheet">
+</head>
+<body>
+    <p id="result"></p>
+    <p id="last"></p>
+    <p id="moyenne-5"></p>
+    <p id="moyenne-50"></p>
+    <p id="moyenne-500"></p>
+    <p>(Pour que la valeur si dessus soit représentative il faut attendre 8:20min)</p>
+    <p id="moyenne-8"></p>
+    <div style="display: flex;">
+        <div id="graph-container" style="width: 50%; height: 100%;">
+            <canvas id="my-chart"></canvas>
+        </div>
+        <div id="graph-container2" style="width: 50%; height: 100%;">
+            <canvas id="my-chart2"></canvas>
+        </div>
+    </div>
+</body>
+<script
+src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+</script>
+<script>
+    let lastNumber = 0;
+    let list = [];
+    let list2 = []
+    let tot = 0
+    let n = 0
+    let eventtSource = new EventSource("http://clicker.fuzeiii.fr/Core/SSE.php");
+    eventtSource.onmessage = function(event) {
+        document.getElementById("result").innerText = event.data + " total clicks";
+
+        let currentValue = Number(event.data.replace(/\s/g,''));
+        
+        
+        let difference = currentValue - lastNumber;
+        n = n+1
+        if (n > 1){
+            tot = tot + difference
+            list.push(difference)
+        }
+        list2.push(currentValue)
+
+        lastNumber = currentValue;
+        document.getElementById("last").innerText = "Différence entre les deux dernières valeurs: " + difference;
+        document.getElementById("moyenne-5").innerText = "Moyenne des 5 dernières valeurs: " + (list.slice(-5).reduce((acc, val) => acc + val, 0)/5);
+        document.getElementById("moyenne-50").innerText = "Moyenne des 50 dernières valeurs: " + (list.slice(-50).reduce((acc, val) => acc + val, 0)/50);
+        document.getElementById("moyenne-500").innerText = "Moyenne des 500 dernières valeurs: " + (list.slice(-500).reduce((acc, val) => acc + val, 0)/500);
+        document.getElementById("moyenne-8").innerText = "Moyenne depuis le chargement de la page: " + (tot / n);
+
+
+
+
+        let positions = list.map((_, index) => index);
+        let config = {
+        type: 'line',
+        data: {
+            labels: positions,
+            datasets: [{
+            label: 'Évolution de la différence entre les deux dernières valeurs depuis le chargement',
+            data: list,
+            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+            borderColor: 'rgba(0, 123, 255, 1)',
+            borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: {
+                duration: 0
+            },
+            scales: {
+            x: {
+                title: {
+                display: true,
+                text: 'Position'
+                }
+            },
+            y: {
+                title: {
+                display: true,
+                text: 'Valeur'
+                }
+            }
+            }
+        }
+        };
+        let myChart = new Chart(document.getElementById('my-chart'), config);
+
+        let positions2 = list2.map((_, index) => index);
+        let config2 = {
+        type: 'line',
+        data: {
+            labels: positions,
+            datasets: [{
+            label: 'Évolution de la valeur du clickeur',
+            data: list2,
+            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+            borderColor: 'rgba(0, 123, 255, 1)',
+            borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: {
+                duration: 0
+            },
+            scales: {
+            x: {
+                title: {
+                display: true,
+                text: 'Position'
+                }
+            },
+            y: {
+                title: {
+                display: true,
+                text: 'Valeur'
+                }
+            }
+            }
+        }
+        };
+        let myChart2 = new Chart(document.getElementById('my-chart2'), config2);
+
+
+    };
+
+
+</script>
