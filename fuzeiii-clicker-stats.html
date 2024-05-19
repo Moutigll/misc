@@ -15,7 +15,7 @@
     <p id="moyenne-5"></p>
     <p id="moyenne-50"></p>
     <p id="moyenne-500"></p>
-    <p>(Pour que la valeur si dessus soit représentative il faut attendre 8:20min)</p>
+    <p>(Pour que la valeur ci dessus soit représentative il faut attendre 8:20min)</p>
     <p id="moyenne-8"></p>
     <div style="display: flex;">
         <div id="graph-container" style="width: 50%; height: 100%;">
@@ -25,17 +25,32 @@
             <canvas id="my-chart2"></canvas>
         </div>
     </div>
+    <p>Attention, après 16:40 min les graphiques se rafraichissent plus que toutes les 5 secondes pour économiser de la mémoire !</p>
+    Modifier la valeur de rafraichissment: <input type="range" min="1" max="60" value="1" id="length-refresh" class="lenght" style="width: 25%;"><p id="val">1</p>
 </body>
 <script
 src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
 </script>
 <script>
+
+    let length_refresh = document.getElementById("length-refresh")
+    let mod = false
     let lastNumber = 0;
     let list = [];
     let list2 = []
     let tot = 0
     let n = 0
+    let boucle = 0
+    let maxboucle = 1
     let eventtSource = new EventSource("http://clicker.fuzeiii.fr/Core/SSE.php");
+
+    length_refresh.oninput = function() {
+        maxboucle = length_refresh.value
+        mod = true
+        document.getElementById("val").innerText = length_refresh.value
+        boucle = 0
+    }
+    
     eventtSource.onmessage = function(event) {
         document.getElementById("result").innerText = event.data + " total clicks";
 
@@ -45,17 +60,32 @@ src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
         let difference = currentValue - lastNumber;
         n = n+1
         if (n > 1){
-            tot = tot + difference
+                tot = tot + difference
+            }
+        if (boucle == maxboucle){
             list.push(difference)
+            list2.push(currentValue)
+            boucle = 0
         }
-        list2.push(currentValue)
-
         lastNumber = currentValue;
         document.getElementById("last").innerText = "Différence entre les deux dernières valeurs: " + difference;
-        document.getElementById("moyenne-5").innerText = "Moyenne des 5 dernières valeurs: " + (list.slice(-5).reduce((acc, val) => acc + val, 0)/5);
-        document.getElementById("moyenne-50").innerText = "Moyenne des 50 dernières valeurs: " + (list.slice(-50).reduce((acc, val) => acc + val, 0)/50);
-        document.getElementById("moyenne-500").innerText = "Moyenne des 500 dernières valeurs: " + (list.slice(-500).reduce((acc, val) => acc + val, 0)/500);
+        document.getElementById("moyenne-5").innerText = "Moyenne des 5 dernières valeurs: " + (list.slice((-5/maxboucle)).reduce((acc, val) => acc + val, 0)/(5/maxboucle));
+        document.getElementById("moyenne-50").innerText = "Moyenne des 50 dernières valeurs: " + (list.slice((-50/maxboucle)).reduce((acc, val) => acc + val, 0)/(50/maxboucle));
+        document.getElementById("moyenne-500").innerText = "Moyenne des 500 dernières valeurs: " + (list.slice((-500/maxboucle)).reduce((acc, val) => acc + val, 0)/(500/maxboucle));
         document.getElementById("moyenne-8").innerText = "Moyenne depuis le chargement de la page: " + (tot / n);
+        boucle = boucle+1
+        if (n == 1000 && mod == false){
+            maxboucle = 5
+            let c = 0
+            while (c < 200){
+                list.splice(c,4)
+                list2.slice(c,4)
+                c+=1
+            }
+            document.getElementById("val").innerText = 5
+            length_refresh.value = 5
+            boucle = 0
+        }
 
 
 
